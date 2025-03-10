@@ -70,3 +70,15 @@ curl -X POST http://localhost:8080/v1/chat/completions \
 - Currently only supports basic chat completion functionality
 - Streaming is not yet implemented
 - Token counting is not implemented
+
+## Make Docker images
+
+```bash
+make images
+```
+
+## Push Docker images
+
+```bash
+make push-images
+```
