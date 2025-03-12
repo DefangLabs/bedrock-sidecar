@@ -53,11 +53,11 @@ build-arm64: ensure
 
 .PHONY: image-amd64
 image-amd64: build-amd64
-	docker build --platform linux/amd64 -t ${PROJECT_NAME} -t $(DOCKER_IMAGE_AMD64) .
+	docker build --platform linux/amd64 -t ${PROJECT_NAME} -t $(DOCKER_IMAGE_AMD64) --provenance false .
 
 .PHONY: image-arm64
 image-arm64: build-arm64
-	docker build --platform linux/arm64 -t ${PROJECT_NAME} -t $(DOCKER_IMAGE_ARM64) .
+	docker build --platform linux/arm64 -t ${PROJECT_NAME} -t $(DOCKER_IMAGE_ARM64) --provenance false .
 
 .PHONY: image
 images: image-amd64 image-arm64 ## Build all docker images and manifest
