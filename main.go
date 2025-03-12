@@ -27,6 +27,7 @@ func main() {
 	bedrockClient = bedrockruntime.NewFromConfig(cfg)
 
 	http.HandleFunc("/v1/chat/completions", handleChatCompletions)
+	http.HandleFunc("/api/chat", handleChatCompletions)
 
 	log.Printf("Listening on port %s", port)
 
