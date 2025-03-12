@@ -15,8 +15,8 @@ type OpenAIRequest struct {
 	Seed           int                    `json:"seed,omitempty"`
 	Stop           []string               `json:"stop,omitempty"`
 	Stream         bool                   `json:"stream,omitempty"`
-	Temperature    float64                `json:"temperature,omitempty"`
-	TopP           float64                `json:"top_p,omitempty"`
+	Temperature    *float64               `json:"temperature,omitempty"`
+	TopP           *float64               `json:"top_p,omitempty"`
 	Extra          map[string]interface{} `json:"-"`
 }
 
@@ -39,12 +39,27 @@ func ToBedrockRequest(openAIReq OpenAIRequest) bedrockruntime.ConverseInput {
 		})
 	}
 
+	var temperature *float32
+	var maxTokens *int32
+	var topP *float32
+	if openAIReq.Temperature != nil {
+		temperature = aws.Float32(float32(*openAIReq.Temperature))
+	}
+
+	if openAIReq.MaxTokens != 0 {
+		maxTokens = aws.Int32(int32(openAIReq.MaxTokens)) //nolint:gosec
+	}
+
+	if openAIReq.TopP != nil {
+		topP = aws.Float32(float32(*openAIReq.TopP))
+	}
+
 	return bedrockruntime.ConverseInput{
 		InferenceConfig: &types.InferenceConfiguration{
-			MaxTokens:     aws.Int32(int32(openAIReq.MaxTokens)), //nolint:gosec
+			MaxTokens:     maxTokens,
 			StopSequences: openAIReq.Stop,
-			Temperature:   aws.Float32(float32(openAIReq.Temperature)),
-			TopP:          aws.Float32(float32(openAIReq.TopP)),
+			Temperature:   temperature,
+			TopP:          topP,
 		},
 		Messages: messages,
 		ModelId:  aws.String(openAIReq.Model),

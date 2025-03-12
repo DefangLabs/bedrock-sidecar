@@ -24,8 +24,8 @@ func TestToBedrockRequest(t *testing.T) {
 					{Role: "system", Content: "You are a helpful assistant"},
 					{Role: "user", Content: "Hello"},
 				},
-				Temperature: 0.7,
-				TopP:        0.9,
+				Temperature: aws.Float64(0.7),
+				TopP:        aws.Float64(0.9),
 				Stop:        []string{"\n", "Human:"},
 			},
 			expected: bedrockruntime.ConverseInput{
@@ -67,9 +67,6 @@ func TestToBedrockRequest(t *testing.T) {
 			expected: bedrockruntime.ConverseInput{
 				ModelId: aws.String("anthropic.claude-v2"),
 				InferenceConfig: &types.InferenceConfiguration{
-					MaxTokens:     aws.Int32(0),
-					Temperature:   aws.Float32(0),
-					TopP:          aws.Float32(0),
 					StopSequences: nil,
 				},
 				Messages: []types.Message{
