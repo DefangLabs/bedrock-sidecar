@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +14,8 @@ import (
 
 var bedrockClient BedrockClientInterface
 
+var modelNameMap map[string]string
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -22,6 +25,12 @@ func main() {
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
 		log.Fatalf("unable to load SDK config: %v", err)
+	}
+
+	// read MODEL_NAME_MAP as json from env
+	err = json.Unmarshal([]byte(os.Getenv("MODEL_NAME_MAP")), &modelNameMap)
+	if err != nil {
+		log.Fatalf("unable to unmarshal MODEL_NAME_MAP: %v", err)
 	}
 
 	bedrockClient = bedrockruntime.NewFromConfig(cfg)

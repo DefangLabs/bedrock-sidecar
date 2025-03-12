@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/DefangLabs/bedrock-sidecar/convert"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 )
 
@@ -22,6 +23,10 @@ func invokeBedrock(
 	ctx context.Context,
 	bedrockReq bedrockruntime.ConverseInput,
 ) (*bedrockruntime.ConverseOutput, error) {
+	mapped, ok := modelNameMap[*bedrockReq.ModelId]
+	if ok {
+		bedrockReq.ModelId = aws.String(mapped)
+	}
 	output, err := bedrockClient.Converse(ctx, &bedrockReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call Bedrock API: %w", err)
