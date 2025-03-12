@@ -1,6 +1,8 @@
 package convert
 
 import (
+	"strings"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
@@ -26,17 +28,22 @@ type OpenAIMessage struct {
 }
 
 func ToBedrockRequest(openAIReq OpenAIRequest) bedrockruntime.ConverseInput {
+	systemMessages := make([]string, 0, 1)
 	messages := make([]types.Message, 0, len(openAIReq.Messages))
 
 	for _, msg := range openAIReq.Messages {
-		messages = append(messages, types.Message{
-			Role: types.ConversationRole(msg.Role),
-			Content: []types.ContentBlock{
-				&types.ContentBlockMemberText{
-					Value: msg.Content,
+		if msg.Role == "system" {
+			systemMessages = append(systemMessages, msg.Content)
+		} else {
+			messages = append(messages, types.Message{
+				Role: types.ConversationRole(msg.Role),
+				Content: []types.ContentBlock{
+					&types.ContentBlockMemberText{
+						Value: msg.Content,
+					},
 				},
-			},
-		})
+			})
+		}
 	}
 
 	var temperature *float32
@@ -63,5 +70,10 @@ func ToBedrockRequest(openAIReq OpenAIRequest) bedrockruntime.ConverseInput {
 		},
 		Messages: messages,
 		ModelId:  aws.String(openAIReq.Model),
+		System: []types.SystemContentBlock{
+			&types.SystemContentBlockMemberText{
+				Value: strings.Join(systemMessages, "\n"),
+			},
+		},
 	}
 }

@@ -38,20 +38,17 @@ func TestToBedrockRequest(t *testing.T) {
 				},
 				Messages: []types.Message{
 					{
-						Role: types.ConversationRole("system"),
-						Content: []types.ContentBlock{
-							&types.ContentBlockMemberText{
-								Value: "You are a helpful assistant",
-							},
-						},
-					},
-					{
 						Role: types.ConversationRole("user"),
 						Content: []types.ContentBlock{
 							&types.ContentBlockMemberText{
 								Value: "Hello",
 							},
 						},
+					},
+				},
+				System: []types.SystemContentBlock{
+					&types.SystemContentBlockMemberText{
+						Value: "You are a helpful assistant",
 					},
 				},
 			},
