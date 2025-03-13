@@ -38,27 +38,15 @@ clean:
 lint:
 	golangci-lint run 
 
-.PHONY: ensure
-ensure: ## Run go get -u
-	go get -t -u ./...
-
-.PHONY: build-amd64
-build-amd64: ensure
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(BUILD_FLAGS) -o bin/${PROJECT_NAME}
-
-.PHONY: build-arm64
-build-arm64: ensure
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build $(BUILD_FLAGS) -o bin/${PROJECT_NAME}
-
 .PHONY: image-amd64
-image-amd64: build-amd64
+image-amd64:
 	docker build --platform linux/amd64 -t ${PROJECT_NAME} -t $(DOCKER_IMAGE_AMD64) --provenance false .
 
 .PHONY: image-arm64
-image-arm64: build-arm64
+image-arm64:
 	docker build --platform linux/arm64 -t ${PROJECT_NAME} -t $(DOCKER_IMAGE_ARM64) --provenance false .
 
-.PHONY: image
+.PHONY: images
 images: image-amd64 image-arm64 ## Build all docker images and manifest
 
 .PHONY: push-images
