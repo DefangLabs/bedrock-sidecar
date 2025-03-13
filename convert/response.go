@@ -15,7 +15,7 @@ type OpenAIResponse struct {
 	Created int64    `json:"created"`
 	Model   string   `json:"model"`
 	Choices []Choice `json:"choices"`
-	Usage   Usage    `json:"usage"`
+	Usage   Usage    `json:"usage,omitempty"`
 }
 
 type Choice struct {
@@ -25,9 +25,9 @@ type Choice struct {
 }
 
 type Usage struct {
-	PromptTokens     int `json:"prompt_tokens"`
-	CompletionTokens int `json:"completion_tokens"`
-	TotalTokens      int `json:"total_tokens"`
+	PromptTokens     int `json:"prompt_tokens,omitempty"`
+	CompletionTokens int `json:"completion_tokens,omitempty"`
+	TotalTokens      int `json:"total_tokens,omitempty"`
 }
 
 type TimeProvider func() time.Time
@@ -62,11 +62,6 @@ func ToOpenAIResponse(bedrockOutput *bedrockruntime.ConverseOutput, model string
 					},
 					FinishReason: "error",
 				},
-			},
-			Usage: Usage{
-				PromptTokens:     0,
-				CompletionTokens: 0,
-				TotalTokens:      0,
 			},
 		}
 	}
