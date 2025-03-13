@@ -61,6 +61,16 @@ func ToBedrockRequest(openAIReq OpenAIRequest) bedrockruntime.ConverseInput {
 		topP = aws.Float32(float32(*openAIReq.TopP))
 	}
 
+	var system []types.SystemContentBlock
+
+	if len(systemMessages) > 0 {
+		system = []types.SystemContentBlock{
+			&types.SystemContentBlockMemberText{
+				Value: strings.Join(systemMessages, "\n"),
+			},
+		}
+	}
+
 	return bedrockruntime.ConverseInput{
 		InferenceConfig: &types.InferenceConfiguration{
 			MaxTokens:     maxTokens,
@@ -70,10 +80,6 @@ func ToBedrockRequest(openAIReq OpenAIRequest) bedrockruntime.ConverseInput {
 		},
 		Messages: messages,
 		ModelId:  aws.String(openAIReq.Model),
-		System: []types.SystemContentBlock{
-			&types.SystemContentBlockMemberText{
-				Value: strings.Join(systemMessages, "\n"),
-			},
-		},
+		System:   system,
 	}
 }
