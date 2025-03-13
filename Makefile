@@ -4,7 +4,6 @@ PROJECT_NAME := bedrock-sidecar
 VERSION:=$(shell git rev-parse --short HEAD)
 # DOCKER is the docker image repo we need to push to.
 DOCKER_REPO:=defangio
-DOCKER_USER:=defangio
 DOCKER_IMAGE_NAME:=$(DOCKER_REPO)/$(PROJECT_NAME)
 
 DOCKER_IMAGE_ARM64:=$(DOCKER_IMAGE_NAME):arm64-$(VERSION)
@@ -73,4 +72,4 @@ push-images: images login ## Push all docker images
 
 .PHONY: login
 login: ## Login to docker
-	@docker login -u $(DOCKER_USER)
+	@docker login
