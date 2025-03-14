@@ -1,8 +1,7 @@
 package convert
 
 import (
-	"strings"
-
+	"github.com/DefangLabs/bedrock-sidecar/bedrock"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
@@ -27,25 +26,65 @@ type OpenAIMessage struct {
 	Content string `json:"content"`
 }
 
-func ToBedrockRequest(openAIReq OpenAIRequest) bedrockruntime.ConverseInput {
-	systemMessages := make([]string, 0, 1)
-	messages := make([]types.Message, 0, len(openAIReq.Messages))
+func ToBedrockRequest(modelMap bedrock.ModelMap, openAIReq OpenAIRequest) bedrockruntime.ConverseInput {
+	systemMessages, messages := partitionSystemMessages(openAIReq.Messages)
 
-	for _, msg := range openAIReq.Messages {
-		if msg.Role == "system" {
-			systemMessages = append(systemMessages, msg.Content)
-		} else {
-			messages = append(messages, types.Message{
-				Role: types.ConversationRole(msg.Role),
-				Content: []types.ContentBlock{
-					&types.ContentBlockMemberText{
-						Value: msg.Content,
-					},
+	return bedrockruntime.ConverseInput{
+		InferenceConfig: makeInferenceConfig(openAIReq),
+		Messages:        messages,
+		ModelId:         aws.String(modelMap.BedrockModelID(openAIReq.Model)),
+		System:          makeSystem(systemMessages),
+	}
+}
+
+func ToBedrockStreamRequest(modelMap bedrock.ModelMap, openAIReq OpenAIRequest) bedrockruntime.ConverseStreamInput {
+	systemMessages, messages := partitionSystemMessages(openAIReq.Messages)
+
+	return bedrockruntime.ConverseStreamInput{
+		InferenceConfig: makeInferenceConfig(openAIReq),
+		Messages:        messages,
+		ModelId:         aws.String(modelMap.BedrockModelID(openAIReq.Model)),
+		System:          makeSystem(systemMessages),
+	}
+}
+
+func partitionSystemMessages(openAIMessages []OpenAIMessage) ([]types.Message, []types.Message) {
+	systemMessages := make([]types.Message, 0, 1)
+	messages := make([]types.Message, 0, len(openAIMessages))
+
+	for _, msg := range openAIMessages {
+		bedrockMessage := types.Message{
+			Role: types.ConversationRole(msg.Role),
+			Content: []types.ContentBlock{
+				&types.ContentBlockMemberText{
+					Value: msg.Content,
 				},
-			})
+			},
+		}
+
+		if msg.Role == "system" {
+			systemMessages = append(systemMessages, bedrockMessage)
+		} else {
+			messages = append(messages, bedrockMessage)
 		}
 	}
 
+	return systemMessages, messages
+}
+
+func makeSystem(systemMessages []types.Message) []types.SystemContentBlock {
+	system := make([]types.SystemContentBlock, 0, len(systemMessages))
+
+	for _, msg := range systemMessages {
+		system = append(system, &types.SystemContentBlockMemberText{
+			Value: msg.Content[0].(*types.ContentBlockMemberText).Value,
+		})
+	}
+
+	return system
+}
+
+func makeInferenceConfig(openAIReq OpenAIRequest) *types.InferenceConfiguration {
 	var temperature *float32
 	var maxTokens *int32
 	var topP *float32
@@ -61,25 +100,10 @@ func ToBedrockRequest(openAIReq OpenAIRequest) bedrockruntime.ConverseInput {
 		topP = aws.Float32(float32(*openAIReq.TopP))
 	}
 
-	var system []types.SystemContentBlock
-
-	if len(systemMessages) > 0 {
-		system = []types.SystemContentBlock{
-			&types.SystemContentBlockMemberText{
-				Value: strings.Join(systemMessages, "\n"),
-			},
-		}
-	}
-
-	return bedrockruntime.ConverseInput{
-		InferenceConfig: &types.InferenceConfiguration{
-			MaxTokens:     maxTokens,
-			StopSequences: openAIReq.Stop,
-			Temperature:   temperature,
-			TopP:          topP,
-		},
-		Messages: messages,
-		ModelId:  aws.String(openAIReq.Model),
-		System:   system,
+	return &types.InferenceConfiguration{
+		MaxTokens:     maxTokens,
+		StopSequences: openAIReq.Stop,
+		Temperature:   temperature,
+		TopP:          topP,
 	}
 }

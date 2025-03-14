@@ -1,12 +1,14 @@
 package convert
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
+	"github.com/openai/openai-go"
 )
 
 type OpenAIResponse struct {
@@ -15,7 +17,7 @@ type OpenAIResponse struct {
 	Created int64    `json:"created"`
 	Model   string   `json:"model"`
 	Choices []Choice `json:"choices"`
-	Usage   Usage    `json:"usage,omitempty"`
+	Usage   Usage    `json:"usage"`
 }
 
 type Choice struct {
@@ -25,9 +27,9 @@ type Choice struct {
 }
 
 type Usage struct {
-	PromptTokens     int `json:"prompt_tokens,omitempty"`
-	CompletionTokens int `json:"completion_tokens,omitempty"`
-	TotalTokens      int `json:"total_tokens,omitempty"`
+	PromptTokens     int `json:"prompt_tokens"`
+	CompletionTokens int `json:"completion_tokens"`
+	TotalTokens      int `json:"total_tokens"`
 }
 
 type TimeProvider func() time.Time
@@ -94,6 +96,79 @@ func ToOpenAIResponse(bedrockOutput *bedrockruntime.ConverseOutput, model string
 			TotalTokens:      0,
 		},
 	}
+}
+
+func ToOpenAIResponseChunk(bedrockChunk types.ConverseStreamOutput, model string) openai.ChatCompletionChunk {
+	now := timeProvider()
+
+	choice := makeOpenAIChatCompletionChunkChoice(bedrockChunk)
+
+	return openai.ChatCompletionChunk{
+		ID:      generateID(),
+		Object:  "chat.completion.chunk",
+		Created: now.Unix(),
+		Model:   model,
+		Choices: []openai.ChatCompletionChunkChoice{
+			choice,
+		},
+	}
+}
+
+func makeOpenAIChatCompletionChunkChoice(bedrockChunk types.ConverseStreamOutput) openai.ChatCompletionChunkChoice {
+	choice := openai.ChatCompletionChunkChoice{}
+
+	switch output := bedrockChunk.(type) {
+	case *types.ConverseStreamOutputMemberContentBlockStart:
+		log.Println("handling of ConverseStreamOutputMemberContentBlockStart in unimplemented")
+	case *types.ConverseStreamOutputMemberContentBlockStop:
+		log.Println("handling of ConverseStreamOutputMemberContentBlockStop in unimplemented")
+	case *types.ConverseStreamOutputMemberMetadata:
+		log.Println("handling of ConverseStreamOutputMemberMetadata in unimplemented")
+	case *types.ConverseStreamOutputMemberMessageStart:
+		choice.Delta = openai.ChatCompletionChunkChoicesDelta{
+			Role: openai.ChatCompletionChunkChoicesDeltaRole(output.Value.Role),
+		}
+	case *types.ConverseStreamOutputMemberMessageStop:
+		choice.FinishReason = mapStopReasonToFinishReason(output.Value.StopReason)
+	case *types.ConverseStreamOutputMemberContentBlockDelta:
+		choice = handleContentBlockDelta(output)
+	default:
+		log.Println("union is nil or unknown type")
+	}
+
+	return choice
+}
+
+func mapStopReasonToFinishReason(stopReason types.StopReason) openai.ChatCompletionChunkChoicesFinishReason {
+	switch stopReason {
+	case types.StopReasonEndTurn, types.StopReasonStopSequence:
+		return "stop"
+	case types.StopReasonMaxTokens:
+		return "length"
+	case types.StopReasonContentFiltered, types.StopReasonGuardrailIntervened:
+		return "content_filter"
+	case types.StopReasonToolUse:
+		return "tool_calls"
+	default:
+		return "stop"
+	}
+}
+
+func handleContentBlockDelta(
+	output *types.ConverseStreamOutputMemberContentBlockDelta,
+) openai.ChatCompletionChunkChoice {
+	choice := openai.ChatCompletionChunkChoice{}
+	switch delta := output.Value.Delta.(type) {
+	case *types.ContentBlockDeltaMemberText:
+		choice.Delta = openai.ChatCompletionChunkChoicesDelta{
+			Content: delta.Value,
+		}
+	case *types.ContentBlockDeltaMemberReasoningContent:
+		log.Println("handling of ContentBlockDeltaMemberReasoningContent in unimplemented")
+	case *types.ContentBlockDeltaMemberToolUse:
+		log.Println("handling of ContentBlockDeltaMemberReasoningContent in unimplemented")
+	}
+	return choice
 }
 
 func generateID() string {
