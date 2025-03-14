@@ -1,42 +1,37 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
+	"github.com/DefangLabs/bedrock-sidecar/bedrock"
+	"github.com/DefangLabs/bedrock-sidecar/handler"
 )
-
-var bedrockClient BedrockClientInterface
-
-var modelNameMap map[string]string
 
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-
-	cfg, err := config.LoadDefaultConfig(context.Background())
+	bedrockController, err := bedrock.NewController()
 	if err != nil {
-		log.Fatalf("unable to load SDK config: %v", err)
+		log.Fatalf("unable to create bedrock controller: %v", err)
 	}
 
-	// read MODEL_NAME_MAP as json from env
-	err = json.Unmarshal([]byte(os.Getenv("MODEL_NAME_MAP")), &modelNameMap)
+	modelMap, err := bedrock.NewModelMap()
 	if err != nil {
-		log.Fatalf("unable to unmarshal MODEL_NAME_MAP: %v", err)
+		log.Fatalf("unable to create model map: %v", err)
 	}
 
-	bedrockClient = bedrockruntime.NewFromConfig(cfg)
+	handler := handler.Handler{
+		Converser: bedrockController,
+		ModelMap:  modelMap,
+	}
 
-	http.HandleFunc("/v1/chat/completions", handleChatCompletions)
-	http.HandleFunc("/api/chat", handleChatCompletions)
+	http.HandleFunc("/v1/chat/completions", handler.HandleChatCompletions)
+	http.HandleFunc("/api/chat", handler.HandleChatCompletions)
 
 	log.Printf("Listening on port %s", port)
 
