@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 )
 
-type BedrockClient interface {
+type BedrockConverser interface {
 	Converse(
 		ctx context.Context,
 		params *bedrockruntime.ConverseInput,
@@ -22,11 +22,11 @@ type BedrockClient interface {
 	) (*bedrockruntime.ConverseStreamOutput, error)
 }
 
-type Controller struct {
-	client BedrockClient
+type Client struct {
+	client BedrockConverser
 }
 
-func NewController() (Controller, error) {
+func NewController() (Client, error) {
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
 		log.Fatalf("unable to load SDK config: %v", err)
@@ -34,27 +34,29 @@ func NewController() (Controller, error) {
 
 	client := bedrockruntime.NewFromConfig(cfg)
 
-	return Controller{
+	return Client{
 		client: client,
 	}, nil
 }
 
-func (c Controller) InvokeBedrock(
+func (c Client) Converse(
 	ctx context.Context,
-	bedrockReq bedrockruntime.ConverseInput,
+	bedrockReq *bedrockruntime.ConverseInput,
+	optFns ...func(*bedrockruntime.Options),
 ) (*bedrockruntime.ConverseOutput, error) {
-	output, err := c.client.Converse(ctx, &bedrockReq)
+	output, err := c.client.Converse(ctx, bedrockReq, optFns...)
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed to invoke bedrock", err)
 	}
 	return output, nil
 }
 
-func (c Controller) StreamBedrock(
+func (c Client) ConverseStream(
 	ctx context.Context,
-	bedrockReq bedrockruntime.ConverseStreamInput,
+	bedrockReq *bedrockruntime.ConverseStreamInput,
+	optFns ...func(*bedrockruntime.Options),
 ) (*bedrockruntime.ConverseStreamOutput, error) {
-	output, err := c.client.ConverseStream(ctx, &bedrockReq)
+	output, err := c.client.ConverseStream(ctx, bedrockReq, optFns...)
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed to invoke bedrock", err)
 	}
