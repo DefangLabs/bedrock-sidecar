@@ -1,7 +1,7 @@
 package convert
 
 import (
-	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"

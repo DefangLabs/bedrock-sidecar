@@ -1,4 +1,4 @@
-package main
+package handler_test
 
 import (
 	"bytes"
@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/DefangLabs/bedrock-sidecar/convert"
+	"github.com/DefangLabs/bedrock-sidecar/handler"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
@@ -19,7 +20,7 @@ type mockBedrockClient struct {
 	err      error
 }
 
-func (m *mockBedrockClient) Converse(
+func (m mockBedrockClient) Converse(
 	context.Context,
 	*bedrockruntime.ConverseInput,
 	...func(*bedrockruntime.Options),
@@ -27,13 +28,15 @@ func (m *mockBedrockClient) Converse(
 	return m.response, m.err
 }
 
-func TestHandleChatCompletions(t *testing.T) {
-	// Save the original client and restore it after tests
-	originalClient := bedrockClient
-	defer func() {
-		bedrockClient = originalClient
-	}()
+func (m mockBedrockClient) ConverseStream(
+	context.Context,
+	*bedrockruntime.ConverseStreamInput,
+	...func(*bedrockruntime.Options),
+) (*bedrockruntime.ConverseStreamOutput, error) {
+	return &bedrockruntime.ConverseStreamOutput{}, nil
+}
 
+func TestHandleChatCompletions(t *testing.T) {
 	tests := []struct {
 		name         string
 		method       string
@@ -108,11 +111,6 @@ func TestHandleChatCompletions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bedrockClient = &mockBedrockClient{
-				response: tt.mockResponse,
-				err:      tt.mockError,
-			}
-
 			var body bytes.Buffer
 			if tt.requestBody != nil {
 				if err := json.NewEncoder(&body).Encode(tt.requestBody); err != nil {
@@ -123,7 +121,15 @@ func TestHandleChatCompletions(t *testing.T) {
 			req := httptest.NewRequest(tt.method, "/v1/chat/completions", &body)
 			w := httptest.NewRecorder()
 
-			handleChatCompletions(w, req)
+			handler := handler.Handler{
+				Converser: mockBedrockClient{
+					response: tt.mockResponse,
+					err:      tt.mockError,
+				},
+				ModelMap: map[string]string{},
+			}
+
+			handler.HandleChatCompletions(w, req)
 
 			if w.Code != tt.expectedCode {
 				t.Errorf("Expected status code %d, got %d", tt.expectedCode, w.Code)
