@@ -1,7 +1,7 @@
 package convert
 
 import (
-	"log"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
@@ -119,11 +119,11 @@ func makeOpenAIChatCompletionChunkChoice(bedrockChunk types.ConverseStreamOutput
 
 	switch output := bedrockChunk.(type) {
 	case *types.ConverseStreamOutputMemberContentBlockStart:
-		log.Println("handling of ConverseStreamOutputMemberContentBlockStart in unimplemented")
+		slog.Warn("handling of ConverseStreamOutputMemberContentBlockStart in unimplemented")
 	case *types.ConverseStreamOutputMemberContentBlockStop:
-		log.Println("handling of ConverseStreamOutputMemberContentBlockStop in unimplemented")
+		slog.Warn("handling of ConverseStreamOutputMemberContentBlockStop in unimplemented")
 	case *types.ConverseStreamOutputMemberMetadata:
-		log.Println("handling of ConverseStreamOutputMemberMetadata in unimplemented")
+		slog.Warn("handling of ConverseStreamOutputMemberMetadata in unimplemented")
 	case *types.ConverseStreamOutputMemberMessageStart:
 		choice.Delta = openai.ChatCompletionChunkChoicesDelta{
 			Role: openai.ChatCompletionChunkChoicesDeltaRole(output.Value.Role),
@@ -133,7 +133,7 @@ func makeOpenAIChatCompletionChunkChoice(bedrockChunk types.ConverseStreamOutput
 	case *types.ConverseStreamOutputMemberContentBlockDelta:
 		choice = handleContentBlockDelta(output)
 	default:
-		log.Println("union is nil or unknown type")
+		slog.Warn("union is nil or unknown type")
 	}
 
 	return choice
@@ -164,9 +164,9 @@ func handleContentBlockDelta(
 			Content: delta.Value,
 		}
 	case *types.ContentBlockDeltaMemberReasoningContent:
-		log.Println("handling of ContentBlockDeltaMemberReasoningContent in unimplemented")
+		slog.Warn("handling of ContentBlockDeltaMemberReasoningContent in unimplemented")
 	case *types.ContentBlockDeltaMemberToolUse:
-		log.Println("handling of ContentBlockDeltaMemberReasoningContent in unimplemented")
+		slog.Warn("handling of ContentBlockDeltaMemberReasoningContent in unimplemented")
 	}
 	return choice
 }

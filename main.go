@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
@@ -15,14 +15,24 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
+
+	debug := os.Getenv("DEBUG")
+	if debug != "" {
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+	} else {
+		slog.SetLogLoggerLevel(slog.LevelWarn)
+	}
+
 	bedrockController, err := bedrock.NewController()
 	if err != nil {
-		log.Fatalf("unable to create bedrock controller: %v", err)
+		slog.Error("Failed to create bedrock.Controller", "error", err)
+		os.Exit(1)
 	}
 
 	modelMap, err := bedrock.NewModelMap()
 	if err != nil {
-		log.Fatalf("unable to create model map: %v", err)
+		slog.Error("Failed to create bedrock.ModelMap", "error", err)
+		os.Exit(1)
 	}
 
 	handler := handler.Handler{
@@ -33,7 +43,7 @@ func main() {
 	http.HandleFunc("/v1/chat/completions", handler.HandleChatCompletions)
 	http.HandleFunc("/api/chat", handler.HandleChatCompletions)
 
-	log.Printf("Listening on port %s", port)
+	slog.Info("Listening", "port", port)
 
 	srv := &http.Server{
 		Addr:              ":" + port,
@@ -44,6 +54,7 @@ func main() {
 	}
 
 	if err := srv.ListenAndServe(); err != nil {
-		log.Fatal(err)
+		slog.Error("failed to listen", "error", err)
+		os.Exit(1)
 	}
 }
