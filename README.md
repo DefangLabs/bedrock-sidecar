@@ -25,6 +25,12 @@ services:
     x-defang-llm: true
 ```
 
+## Environment variables 
+
+* `DEBUG`: if set (to anything) will show debug logs
+* `MODEL_NAME_MAP`: a JSON encoded map of model names to Bedrock model IDs
+* `PORT`: the TCP port to listed on for HTTP API requests
+
 ## Features
 
 - Intercepts OpenAI API requests
