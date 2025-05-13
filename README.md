@@ -1,3 +1,5 @@
+This repo has been archived in favour of https://github.com/DefangLabs/openai-access-gateway
+
 # Bedrock Sidecar
 
 A proxy server that converts OpenAI API requests to AWS Bedrock requests, allowing you to use OpenAI-compatible clients with AWS Bedrock.
